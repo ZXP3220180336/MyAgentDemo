@@ -3,5 +3,11 @@
     "files.autoSave": "afterDelay",
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnPaste": true,
-    "python.analysis.autoImportCompletions": true
+    "python.analysis.autoImportCompletions": true,
+    "chat.mcp.discovery.enabled": {
+        "claude-desktop": true,
+        "windsurf": true,
+        "cursor-global": true,
+        "cursor-workspace": true
+    }
 }

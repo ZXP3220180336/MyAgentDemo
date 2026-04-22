@@ -1,17 +1,15 @@
 import os
 import re
 from typing import Callable
-from .LLMClient import OpenAICompatibleClient
+from .LLMClient import LLMClient
 
 
 class Agent:
     """
-    一个简单的智能体类，能够与兼容OpenAI接口的LLM服务交互。
+    一个简单的智能体类，能够与LLM服务交互。
     """
 
-    def __init__(
-        self, available_tools: dict[str, Callable], llmClient: OpenAICompatibleClient
-    ):
+    def __init__(self, available_tools: dict[str, Callable], llmClient: LLMClient):
         self.available_tools = available_tools
         self.llm = llmClient
         self.prompt_history = []
@@ -154,8 +152,9 @@ class Agent:
         self.prompt_history.append(f"用户请求: {user_input}")
 
         """运行智能体的主循环"""
-        while True:
-            # print(f"\n循环 {i + 1}/{max_iterations}")
+        i = 0
+        while i < max_iterations:
+            print(f"\n循环 {i + 1}/{max_iterations}")
 
             # 构建完整的Prompt
             full_prompt = "\n".join(self.prompt_history)
@@ -190,7 +189,6 @@ class Agent:
             # 处理完成行动
             if tool_name == "finish":
                 final_answer = kwargs.get("answer", "任务完成")
-                # final_answer = kwargs
                 print("任务完成!")
                 print(f"最终答案: {final_answer}")
                 return
@@ -217,6 +215,6 @@ class Agent:
             self.prompt_history.append(f"Observation: {observation}")
 
         # 如果达到最大循环次数仍未完成
-        # print(
-        #    "⏰ 达到最大循环次数: 抱歉，经过多次尝试仍未完成您的请求。请尝试简化您的问题或稍后重试。"
-        # )
+        print(
+            "达到最大循环次数: 抱歉，经过多次尝试仍未完成您的请求。请尝试简化您的问题或稍后重试。"
+        )
