@@ -9,7 +9,7 @@
 
 ## 📖 项目简介
 
-**MyAgentDemo** 是一个模块化、可扩展的智能体框架，实现了完整的 **ReAct（推理-行动）模式**。该框架允许智能体理解用户需求、规划任务步骤、调用多种工具，并执行复杂的多轮工作流。项目设计注重简洁性、可扩展性和实用性，适用于自动化任务处理、代码生成、信息搜索等多种场景。
+**MyAgentDemo** 是一个基于 **ReAct（推理-行动）模式** 的智能体框架，支持工具调用和推理执行。该框架实现了完整的 Thought-Action-Observation 循环，允许智能体理解用户需求、规划任务步骤、调用多种工具，并执行复杂的多轮工作流。项目设计注重简洁性、可扩展性和实用性，适用于自动化任务处理、信息搜索、文件操作等多种场景。
 
 ### 🎯 设计理念
 
@@ -24,32 +24,30 @@
 - **思考-行动循环**：智能体能够将复杂任务分解为可执行的步骤序列
 - **工具调用机制**：动态选择和调用合适的工具完成任务
 - **状态保持**：在多轮对话中维护完整的执行历史和上下文
+- **最大迭代控制**：防止无限循环，默认最大5次迭代
 
 ### 🛠️ 灵活的工具系统
 - **多种内置工具**：
-  - 🌤️ 天气查询 (`get_weather`) - 基于wttr.in API
-  - 🔍 网络搜索 (`search_web`) - 基于Tavily搜索API
-  - 📍 景点推荐 (`get_attraction`) - 结合天气和地理位置
-  - 📁 文件操作 (`readFile`/`writeFile`) - 读取和写入文件
+  - 🌤️ 天气查询 (`get_weather`) - 基于wttr.in API，查询真实天气数据
+  - 🔍 网络搜索 (`search_web`) - 基于Tavily搜索API，获取最新信息
+  - 📍 景点推荐 (`get_attraction`) - 结合天气和地理位置推荐旅游景点
+  - 📁 文件操作 (`readFile`/`writeFile`) - 读取和写入本地文件
   - 💻 终端命令 (`runTerminalCommand`) - 安全执行系统命令
 - **可扩展设计**：轻松添加自定义工具函数
 
 ### 🔌 多LLM提供商支持
 - **统一客户端接口**：抽象化不同LLM服务商的API差异
+- **工厂模式设计**：通过环境变量自动创建对应LLM客户端
 - **当前支持**：
-  - OpenAI兼容接口（DeepSeek、Modelscope等）
+  - OpenAI兼容接口（DeepSeek、OpenAI官方、Modelscope等）
   - Anthropic Claude兼容接口
 - **易于扩展**：支持添加新的LLM服务提供商
-
-### 🎨 智能代码生成与格式化
-- **代码生成**：能够生成HTML、CSS、JavaScript等代码
-- **自动格式化**：内置代码格式化功能，提升可读性
-- **文件管理**：自动创建和保存代码文件到指定目录
 
 ### 🔒 安全特性
 - **命令执行确认**：执行终端命令前要求用户确认
 - **错误处理**：完善的异常捕获和用户友好提示
 - **配置隔离**：通过环境变量管理敏感信息
+- **输入验证**：对用户输入进行基本验证和处理
 
 ## 🚀 快速开始
 
@@ -61,7 +59,7 @@
 
 1. **克隆项目**
 ```bash
-git clone https://github.com/your-username/MyAgentDemo.git
+git clone https://github.com/ZXP3220180336/MyAgentDemo.git
 cd MyAgentDemo
 ```
 
@@ -74,6 +72,11 @@ pip install uv
 uv sync
 ```
 
+3. **或使用pip安装依赖**
+```bash
+pip install python-dotenv openai anthropic tavily-python requests
+```
+
 3. **配置环境变量**
 ```bash
 # 复制环境变量模板
@@ -83,14 +86,18 @@ cp .env.example .env
 # 详细配置说明见下方"配置说明"章节
 ```
 
-4. **运行示例**
-```python
-# 通过Jupyter Notebook运行
-jupyter notebook main.ipynb
-
-# 或直接运行Python脚本
-python -c "from AgentDemo import OpenAICompatibleClient, available_tools, Agent, AGENT_SYSTEM_PROMPT; import os; from dotenv import load_dotenv; load_dotenv(); llm = OpenAICompatibleClient(model=os.getenv('OPENAI_MODEL_ID'), api_key=os.getenv('OPENAI_API_KEY'), base_url=os.getenv('OPENAI_BASE_URL')); agent = Agent(available_tools=available_tools, llmClient=llm); agent.run_assistant('查询今天北京的天气', system_prompt=AGENT_SYSTEM_PROMPT)"
+4. **运行智能体**
+```bash
+# 直接运行主程序
+python main.py
 ```
+
+5. **交互式使用**
+程序启动后，您可以输入旅游相关查询，例如：
+- "帮我查询北京的天气"
+- "推荐上海的历史文化景点" 
+- "杭州有什么适合家庭游玩的地方？"
+输入"退出"或"exit"结束程序。
 
 ## 🏗️ 架构概览
 
@@ -98,8 +105,8 @@ python -c "from AgentDemo import OpenAICompatibleClient, available_tools, Agent,
 
 ```
 ┌─────────────────────────────────────────┐
-│          应用层 (main.ipynb)            │
-│     用户交互和任务演示入口              │
+│          应用层 (main.py)               │
+│     控制台交互入口，用户输入处理        │
 ├─────────────────────────────────────────┤
 │          智能体层 (Agent.py)            │
 │   ReAct循环控制、对话历史管理、行动解析 │
@@ -108,6 +115,7 @@ python -c "from AgentDemo import OpenAICompatibleClient, available_tools, Agent,
 │   ┌──────────────┐    │  (LLMClient.py) │
 │   │• 天气查询    │    │  • OpenAI兼容   │
 │   │• 网络搜索    │    │  • Anthropic    │
+│   │• 景点推荐    │    │  • 工厂模式     │
 │   │• 文件操作    │    │  • 可扩展接口   │
 │   │• 终端命令    │    └─────────────────┘
 │   └──────────────┘
@@ -117,7 +125,7 @@ python -c "from AgentDemo import OpenAICompatibleClient, available_tools, Agent,
 │   行为规范、格式控制、工具说明          │
 ├─────────────────────────────────────────┤
 │          配置层                          │
-│     (.env, pyproject.toml, uv.lock)    │
+│     (.env, .env.example, pyproject.toml)│
 │     环境变量、依赖管理、项目配置        │
 └─────────────────────────────────────────┘
 ```
@@ -126,12 +134,12 @@ python -c "from AgentDemo import OpenAICompatibleClient, available_tools, Agent,
 
 | 模块 | 文件 | 主要职责 |
 |------|------|----------|
-| **智能体核心** | `AgentDemo/Agent.py` | 实现ReAct循环、解析行动、管理对话历史、代码格式化 |
-| **工具集合** | `AgentDemo/Tools.py` | 提供各种工具函数，支持网络、文件、系统操作 |
-| **LLM客户端** | `AgentDemo/LLMClient.py` | 抽象LLM调用，支持多服务提供商 |
-| **系统提示词** | `AgentDemo/agent_system_prompt.py` | 定义智能体行为规范和输出格式 |
-| **模块导出** | `AgentDemo/__init__.py` | 提供简洁的导入接口 |
-| **示例程序** | `main.ipynb` | 演示完整的使用流程 |
+| **智能体核心** | `AgentDemo/Agent.py` | 实现ReAct循环、解析行动、管理对话历史、工具调用 |
+| **工具集合** | `AgentDemo/Tools.py` | 提供各种工具函数，支持天气查询、网络搜索、文件操作等 |
+| **LLM客户端工厂** | `AgentDemo/LLMClient.py` | LLM客户端工厂模式，支持多服务提供商，根据环境变量自动创建 |
+| **系统提示词** | `AgentDemo/agent_system_prompt.py` | 定义智能体行为规范和输出格式，强制ReAct格式 |
+| **模块导出** | `AgentDemo/__init__.py` | 提供简洁的导入接口，导出核心类和函数 |
+| **主程序** | `main.py` | 控制台交互入口，用户输入处理循环 |
 
 ### ReAct工作流程
 
@@ -154,17 +162,13 @@ graph TD
 ```python
 import os
 from dotenv import load_dotenv
-from AgentDemo import OpenAICompatibleClient, available_tools, Agent, AGENT_SYSTEM_PROMPT
+from AgentDemo import LLMClientFactory, available_tools, Agent, AGENT_SYSTEM_PROMPT
 
 # 加载环境变量
 load_dotenv()
 
-# 初始化LLM客户端（使用DeepSeek API）
-llm_client = OpenAICompatibleClient(
-    model=os.getenv("OPENAI_MODEL_ID") or "deepseek-chat",
-    api_key=os.getenv("OPENAI_API_KEY") or "",
-    base_url=os.getenv("OPENAI_BASE_URL") or "https://api.deepseek.com"
-)
+# 初始化LLM客户端（根据.env配置自动创建）
+llm_client = LLMClientFactory.create_from_env()
 
 # 创建智能体实例
 agent = Agent(available_tools=available_tools, llmClient=llm_client)
@@ -174,26 +178,28 @@ task = "查询今天北京的天气，然后根据天气推荐一个旅游景点
 agent.run_assistant(user_input=task, system_prompt=AGENT_SYSTEM_PROMPT)
 ```
 
-### Jupyter Notebook示例
+### 控制台使用示例
 
-项目包含完整的Jupyter Notebook示例 (`main.ipynb`)，展示了三种典型用例：
+运行 `python main.py` 启动智能旅游助手，支持以下类型的查询：
 
 1. **天气查询与景点推荐**
-   ```python
-   # 查询北京天气并推荐景点
-   task = "你好，请帮我查询一下今天北京的天气，然后根据天气推荐一个合适的旅游景点。"
+   ```
+   请输入查询内容: 帮我查询北京的天气，然后推荐一个景点
    ```
 
-2. **代码生成任务**
-   ```python
-   # 生成贪吃蛇游戏代码
-   task = "你好，请帮我实现一个贪吃蛇游戏，用html，css和js实现，代码分别放在不同的文件中，文件放在snake文件夹下。"
+2. **旅游信息搜索**
+   ```
+   请输入查询内容: 搜索上海有哪些历史文化景点
    ```
 
-3. **信息搜索与整理**
-   ```python
-   # 搜索信息并保存到文件
-   task = "你好，请帮我查询马来西亚测绘设备经销商的电话、邮箱、网页及名称信息，将信息写入经销商.txt文件中"
+3. **文件操作任务**
+   ```
+   请输入查询内容: 读取当前目录下的README.md文件
+   ```
+
+4. **组合任务**
+   ```
+   请输入查询内容: 查询杭州天气，根据天气推荐适合家庭游玩的地方，并保存推荐结果到recommendation.txt
    ```
 
 ### 工具调用机制
@@ -242,38 +248,36 @@ formatted_html = agent.format_code(
 
 ### 环境变量配置
 
-项目使用`.env`文件管理配置，支持多种LLM服务：
+项目使用`.env`文件管理配置，支持多种LLM服务。复制`.env.example`为`.env`并填写实际API密钥：
 
 ```env
 # ========== Tavily API 配置 ==========
 # 用于网络搜索功能，注册地址：https://tavily.com
 TAVILY_API_KEY=your_tavily_api_key_here
 
-# ========== LLM API 配置（选择一种） ==========
+# ========== LLM API 配置（根据LLMClient.py工厂类设计） ==========
+# LLMClientFactory.create_from_env() 使用以下环境变量：
 
-# 选项一：DeepSeek API（推荐）
-# 地址：https://api.deepseek.com
-# 只允许这两个model名（强制）：
-# deepseek-chat（对应 V3.2 非思考版）
-# deepseek-reasoner（对应 V3.2 思考版）
-OPENAI_API_KEY=sk-your-deepseek-api-key
-OPENAI_BASE_URL=https://api.deepseek.com
-OPENAI_MODEL_ID=deepseek-chat
+# API类型：openai (OpenAI兼容接口) 或 anthropic (Anthropic Claude API)
+LLM_API_TYPE=openai
 
-# 对应的Anthropic兼容接口配置（如需要）
-ANTHROPIC_API_KEY=sk-your-deepseek-api-key
-ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic
-ANTHROPIC_MODEL_ID=deepseek-V3.2
+# 模型名称，根据选择的API类型填写：
+# - OpenAI兼容服务: gpt-3.5-turbo, gpt-4, deepseek-chat, qwen-max 等
+# - Anthropic服务: claude-3-haiku-20240307, claude-3-sonnet-20240229, claude-3-opus-20240229 等
+LLM_MODEL=deepseek-chat
 
-# 选项二：Modelscope（国内用户）
-# OPENAI_API_KEY=your_modelscope_api_key
-# OPENAI_BASE_URL=https://api-inference.modelscope.cn/v1/
-# OPENAI_MODEL_ID=qwen-max
+# API密钥，从对应服务商获取
+LLM_API_KEY=sk-your-deepseek-api-key-here
 
-# 选项三：其他OpenAI兼容服务
-# OPENAI_API_KEY=your_api_key
-# OPENAI_BASE_URL=https://api.example.com/v1
-# OPENAI_MODEL_ID=gpt-4-turbo
+# API基础URL，根据服务商填写：
+# - OpenAI官方: https://api.openai.com/v1
+# - DeepSeek: https://api.deepseek.com
+# - Anthropic官方: https://api.anthropic.com
+LLM_BASE_URL=https://api.deepseek.com
+
+# ========== 可选配置 ==========
+# 最大迭代次数（防止无限循环）
+MAX_ITERATIONS=5
 ```
 
 ### 依赖管理
@@ -358,19 +362,21 @@ available_tools = {
 
 ### 添加新LLM客户端
 
-1. **创建新的客户端类**
+项目使用工厂模式管理LLM客户端，添加新客户端需要以下步骤：
+
+1. **创建新的客户端类（继承LLMClient基类）**
 
 ```python
 # 在LLMClient.py中添加
-class NewLLMClient:
+from .LLMClient import LLMClient
+
+class NewLLMClient(LLMClient):
     """
-    新的LLM服务客户端，需实现generate方法
+    新的LLM服务客户端，需继承LLMClient并实现generate方法
     """
     def __init__(self, model: str, api_key: str, base_url: str):
-        self.model = model
-        self.api_key = api_key
-        self.base_url = base_url
-        # 初始化客户端
+        super().__init__(model, api_key, base_url)
+        # 初始化第三方客户端
         self.client = ThirdPartyClient(api_key=api_key, base_url=base_url)
     
     def generate(self, user_prompt: str, system_prompt: str) -> str:
@@ -393,13 +399,37 @@ class NewLLMClient:
             return "错误：调用语言模型服务时出错。"
 ```
 
-2. **在__init__.py中导出**
+2. **在LLMClientFactory中添加支持**
 
 ```python
-# 在AgentDemo/__init__.py中添加
-from .LLMClient import NewLLMClient
+# 在LLMClient.py的LLMClientFactory类中添加
+class LLMClientFactory:
+    """LLM客户端工厂类，用于创建合适的客户端"""
+    
+    @staticmethod
+    def create_client(api_type: str = "openai", **kwargs) -> LLMClient:
+        # ... 现有代码 ...
+        
+        if api_type == "new_provider":
+            return NewLLMClient(
+                model=model or "default-model",
+                api_key=api_key or "demo_key",
+                base_url=base_url or "https://api.newprovider.com",
+            )
+        elif api_type == "anthropic":
+            # ... 现有代码 ...
+        else:
+            # ... 现有代码 ...
+```
 
-__all__ = [..., "NewLLMClient"]
+3. **更新环境变量支持**
+在`.env.example`中添加新提供商的配置示例：
+```env
+# 新LLM提供商配置
+# LLM_API_TYPE=new_provider
+# LLM_MODEL=default-model
+# LLM_API_KEY=your_new_provider_api_key
+# LLM_BASE_URL=https://api.newprovider.com
 ```
 
 ### 修改系统提示词
@@ -418,17 +448,17 @@ MyAgentDemo/
 ├── AgentDemo/                    # 核心模块目录
 │   ├── __init__.py              # 模块导出（简化导入）
 │   ├── Agent.py                 # 智能体核心类（ReAct实现）
-│   ├── LLMClient.py             # LLM客户端抽象层
+│   ├── LLMClient.py             # LLM客户端工厂模式
 │   ├── Tools.py                 # 工具函数集合
 │   └── agent_system_prompt.py   # 系统提示词定义
-├── main.ipynb                   # Jupyter Notebook示例
+├── main.py                      # 控制台应用主入口
 ├── pyproject.toml              # 项目配置和依赖声明
 ├── uv.lock                     # 依赖锁定文件（UV）
-├── .env                        # 环境变量配置（需自行创建）
-├── .env.example                # 环境变量配置示例
+├── .env.example                # 环境变量配置模板
 ├── .vscode/                    # VS Code配置
 │   └── settings.json          # 编辑器设置
-├── .python-version             # Python版本声明
+├── .gitignore                  # Git忽略文件配置
+├── CLAUDE.md                   # 项目文档和开发规范
 └── README.md                   # 本文档
 ```
 
@@ -436,13 +466,14 @@ MyAgentDemo/
 
 | 文件路径 | 重要性 | 主要功能 |
 |----------|--------|----------|
-| `AgentDemo/Agent.py` | 🔴 核心 | 智能体主类，实现ReAct循环、行动解析、代码格式化 |
-| `AgentDemo/Tools.py` | 🔴 核心 | 工具函数集合，支持扩展新工具 |
-| `AgentDemo/LLMClient.py` | 🟡 重要 | LLM客户端抽象，支持多提供商 |
-| `AgentDemo/agent_system_prompt.py` | 🟡 重要 | 系统提示词，控制智能体行为 |
-| `main.ipynb` | 🟢 示例 | 完整的使用示例和工作流程演示 |
+| `AgentDemo/Agent.py` | 🔴 核心 | 智能体主类，实现ReAct循环、行动解析、工具调用 |
+| `AgentDemo/Tools.py` | 🔴 核心 | 工具函数集合，支持天气查询、网络搜索、文件操作等 |
+| `AgentDemo/LLMClient.py` | 🟡 重要 | LLM客户端工厂模式，支持多提供商，根据环境变量自动创建 |
+| `AgentDemo/agent_system_prompt.py` | 🟡 重要 | 系统提示词，控制智能体行为，强制ReAct格式 |
+| `main.py` | 🟢 重要 | 控制台应用主入口，用户交互循环 |
 | `pyproject.toml` | 🟢 配置 | 项目依赖和元数据配置 |
-| `.env` | 🟡 重要 | 环境变量和API密钥配置 |
+| `.env.example` | 🟡 重要 | 环境变量配置模板，需复制为`.env`使用 |
+| `CLAUDE.md` | 🟢 配置 | 项目文档和开发规范 |
 
 ## 🧪 开发指南
 
@@ -510,7 +541,7 @@ MyAgentDemo/
 **A**: 确保系统提示词中的格式要求清晰明确，可尝试在提示词中添加更多示例。
 
 ### Q: 如何切换不同的LLM服务商？
-**A**: 修改`.env`文件中的API配置，或直接在代码中初始化不同的LLMClient。
+**A**: 修改`.env`文件中的`LLM_API_TYPE`、`LLM_MODEL`、`LLM_API_KEY`、`LLM_BASE_URL`配置，或使用`LLMClientFactory.create_client()`直接创建客户端。
 
 ### Q: 添加新工具后智能体不识别
 **A**: 确保：
@@ -520,6 +551,12 @@ MyAgentDemo/
 
 ### Q: 代码格式化功能不起作用
 **A**: 检查文件扩展名是否正确，目前仅支持`.html`、`.css`、`.js`文件。
+
+### Q: 使用UV安装依赖失败
+**A**: 确保已安装UV (`pip install uv`)，或使用pip直接安装依赖：`pip install python-dotenv openai anthropic tavily-python requests`
+
+### Q: 环境变量配置不正确
+**A**: 复制`.env.example`为`.env`，填写正确的API密钥。确保变量名与代码中读取的一致（`LLM_API_TYPE`、`LLM_MODEL`等）。
 
 ## 🤝 贡献指南
 
@@ -561,9 +598,9 @@ MyAgentDemo/
 
 ## 📞 支持与联系
 
-- **GitHub Issues**: [报告问题或请求功能](https://github.com/your-username/MyAgentDemo/issues)
+- **GitHub Issues**: [报告问题或请求功能](https://github.com/ZXP3220180336/MyAgentDemo/issues)
 - **文档**: 本文档和代码注释
-- **示例**: 查看 `main.ipynb` 获取完整使用示例
+- **示例**: 查看 `main.py` 获取完整使用示例
 
 ---
 
@@ -572,5 +609,5 @@ MyAgentDemo/
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/stars/your-username/MyAgentDemo?style=social" alt="GitHub stars">
+  <img src="https://img.shields.io/github/stars/ZXP3220180336/MyAgentDemo?style=social" alt="GitHub stars">
 </p>
